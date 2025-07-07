@@ -6,6 +6,9 @@ import os
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24) 
 
+
+   
+
 def get_currect_user():
    user_result = None
    if 'user' in session:
@@ -50,8 +53,13 @@ def register():
    if user:
       return redirect(url_for('index'))
    if request.method == 'POST':
-      hash_password = generate_password_hash(request.form['password'], method='pbkdf2:sha256')
+      # check fro duplicate
       db = get_db()
+      existing_user = db.execute('select id from users where name = ?' , [request.form['name']]).fetchone()
+      if existing_user:
+         return render_template('register.html', user=user, error="User already found")
+         
+      hash_password = generate_password_hash(request.form['password'], method='pbkdf2:sha256')
       print(db)
       db.execute('insert into users (name, password, expert, admin) values (?,?,?,?)', [request.form['name'], hash_password, '1', '1'])
       db.commit()
@@ -81,6 +89,8 @@ def login():
 @app.route('/question/<question_id>')
 def question(question_id):
    user = get_currect_user()
+   if not user:
+      return redirect(url_for('login'))
    question = None
    if user:
       db = get_db()
@@ -90,6 +100,8 @@ def question(question_id):
 @app.route('/answer/<question_id>', methods=['GET','POST'])
 def answer(question_id):
    user = get_currect_user()
+   if not user:
+      return redirect(url_for('login'))
    question = None
    if user:
       db = get_db()
@@ -102,7 +114,9 @@ def answer(question_id):
 
 @app.route('/unanswered')
 def unanswered():
-   user =  get_currect_user()
+   user = get_currect_user()
+   if not user:
+      return redirect(url_for('login'))
    questions = None
 
    if user: 
@@ -112,7 +126,9 @@ def unanswered():
 
 @app.route('/ask', methods=['GET','POST'])
 def ask():
-   user =  get_currect_user()  
+   user = get_currect_user()
+   if not user:
+      return redirect(url_for('login'))
    if user:
     db = get_db()
     if request.method == 'POST':
@@ -127,7 +143,9 @@ def ask():
 
 @app.route('/users')
 def users():
-   user =  get_currect_user()
+   user = get_currect_user()
+   if not user:
+      return redirect(url_for('login'))
    if user:
       db = get_db()
       users = db.execute('select id, name, admin, expert from users')
@@ -144,6 +162,8 @@ def promote(user_id):
    print("user id", user_id)
 
    user = get_currect_user()
+   if not user:
+      return redirect(url_for('login'))
    if user:
       db = get_db()
       db.execute('update users set expert = 1 where id = ?', [user_id])
