@@ -38,7 +38,7 @@
             0 %}
             <li><a href="{{ url_for('ask') }}">Ask Question</a></li>
             {% endif %} {% if user and user[1] == 1 %}
-            <li><a href="{{ url_for('answer') }}">Answer Questions</a></li>
+            <li><a href="{{ url_for('unanswered') }}">Answer Questions</a></li>
             {% endif %} {% if user and user[1] == 1 and user[2] == 1 %}
             <li><a href="{{ url_for('users') }}">User Setup</a></li>
             {% endif %} {% if user %}
@@ -59,7 +59,7 @@
           <div class="list-group">
             {% if questions %} {% for question in questions %}
             <a
-              href="{{ url_for('answer', question_text=question['text'])}}"
+              href="{{ url_for('answer', question_id=question['id'])}}"
               class="list-group-item"
             >
               <h4 class="list-group-item-heading">
