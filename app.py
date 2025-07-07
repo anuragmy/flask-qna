@@ -35,7 +35,12 @@ def init_db():
 @app.route('/')
 def index():
    user = get_currect_user()
-   return render_template('home.html', user=user)
+   questions = None
+
+   if user: 
+      db = get_db()
+      questions = db.execute('select question_text, id, answer_by_id, expert_id from questions where expert_id = ?', [user['id']]).fetchall()
+   return render_template('home.html', user=user, questions=questions)
 
 
 
@@ -81,17 +86,36 @@ def question():
 @app.route('/answer')
 def answer():
    user = get_currect_user()
-   return render_template('answer.html', user=user)
+   if user:
+      db = get_db()
+      question = db.execute('select question_text, answer_by_id, expert_id from questions where expert_id = 1')
+      question_result = question.fetchall()
+   return render_template('answer.html', user=user, questions=question_result)
 
 @app.route('/unanswered')
 def unanswered():
    user =  get_currect_user()
-   return render_template('unanswered.html', user=user)
+   questions = None
 
-@app.route('/ask')
+   if user: 
+      db = get_db()
+      questions = db.execute('select questions.question_text, questions.id, users.name as name, questions.expert_id from questions join users on users.id  = questions.answer_by_id where questions.answer_text is null and questions.expert_id = ?', [user['id']]).fetchall()
+   return render_template('unanswered.html', user=user, questions=questions)
+
+@app.route('/ask', methods=['GET','POST'])
 def ask():
-   user =  get_currect_user()
+   user =  get_currect_user()  
+   if user:
+    db = get_db()
+    if request.method == 'POST':
+        db.execute('insert into questions (question_text, answer_by_id, expert_id) values (?,?,?)', [request.form['question'], user['id'], request.form['expert']] )
+        db.commit()
+        return "QUestion {} Expert id {}".format(request.form['question'], request.form['expert'])
+    experts = db.execute('select id, name from users where expert = 1')
+    experts_result  = experts.fetchall()
+    return render_template('ask.html', user=user, experts=experts_result)
    return render_template('ask.html', user=user)
+
 
 @app.route('/users')
 def users():
